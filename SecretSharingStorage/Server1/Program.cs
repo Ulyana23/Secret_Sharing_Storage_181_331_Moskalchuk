@@ -14,72 +14,70 @@ namespace Server1
     {
         static void Main(string[] args)
         {
+            try
+            {
 
-            string word = "hello";
+                // Устанавливаем IP-адрес и порт
+                IPAddress sourceIpAddress = IPAddress.Parse("127.0.0.1");
+                int sourcePort = 8001;
 
+                Socket sourceSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-
-            List<BigInteger> secretParts = ShamirSecretSharing.SecretSharing(WordToNumber(word));
-            Console.WriteLine("secretParts before: " + string.Join(", ", secretParts));
-            BigInteger P = secretParts[0];
-            secretParts.RemoveAt(0);
-            Console.WriteLine("secretParts after: " + string.Join(", ", secretParts));
-            BigInteger n = ShamirSecretSharing.SecretRecovery(secretParts, P);
-            NumberToWord(n);
-
-
-
-            // Устанавливаем IP-адрес и порт
-            IPAddress sourceIpAddress = IPAddress.Parse("127.0.0.1");
-            int sourcePort = 8001;
-
-            Socket sourceSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-            sourceSocket.Bind(new IPEndPoint(sourceIpAddress, sourcePort));
-            sourceSocket.Listen(1);
-            Console.WriteLine("Сервер 1 запущен. Ожидание подключений...");
-
-            // Принимаем входящее соединение от клиента
-            Socket clientSocket = sourceSocket.Accept();
-            Console.WriteLine("Клиент подключен к серверу 1.");
-
-            byte[] buffer = new byte[1024];
-            int length = clientSocket.Receive(buffer);
-            string message = Encoding.UTF8.GetString(buffer, 0, length);
-            Console.WriteLine("Получено сообщение: " + message);
-
-            Socket destinationSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-            // Отправляем сообщение на сервер 2
-            byte[] data = Encoding.Unicode.GetBytes(message);
-            destinationSocket.Connect("127.0.0.1", 8002);
-            destinationSocket.Send(data);
-            Console.WriteLine("Сообщение отправлено на сервер 2.");
+                sourceSocket.Bind(new IPEndPoint(sourceIpAddress, sourcePort));
+                sourceSocket.Listen(1);
+                Console.WriteLine("Сервер 1 запущен. Ожидание подключений...");
 
 
 
+                // Принимаем входящее соединение от клиента
+                Socket clientSocket = sourceSocket.Accept();
+                Console.WriteLine("Клиент подключен к серверу 1.");
+
+                byte[] buffer = new byte[1024];
+                int length = clientSocket.Receive(buffer);
+                string message = Encoding.UTF8.GetString(buffer, 0, length);
+                Console.WriteLine("Получено сообщение: " + message);
+
+                // разделяем секрет
+                List<BigInteger> secretParts = ShamirSecretSharing.SecretSharing(WordToNumber(message));
+                Console.WriteLine("secretParts before: " + string.Join(", ", secretParts));
+                BigInteger P = secretParts[0];
+                secretParts.RemoveAt(0);
+                Console.WriteLine("secretParts after: " + string.Join(", ", secretParts));
+
+                DatabaseWork.FillDatabase(1, secretParts[0].ToString(), P.ToString());
+                DatabaseWork.ReadDataFromSecretsTable();
+
+                // соединяем секрет
+                BigInteger n = ShamirSecretSharing.SecretRecovery(secretParts, P);
+                string decodedWord = NumberToWord(n);
+
+                byte[] data = Encoding.UTF8.GetBytes(message);
+
+                // отправляем данные обратно клиенту
+                clientSocket.Send(data, 0, data.Length, SocketFlags.None);
+
+                // Отправляем сообщение на сервер 2
+                Socket destinationSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+                byte[] secretPart = Encoding.UTF8.GetBytes(secretParts[0].ToString());
+                destinationSocket.Connect("127.0.0.1", 8002);
+                destinationSocket.Send(secretPart);
+                Console.WriteLine("Сообщение отправлено на сервер 2.");
 
 
-            /*string connectionString = "Data Source=C:\\Users\\User\\source\\repos\\SecretSharingStorage\\Server1Database.sqlite;Version=3;";
-            SQLiteConnection connection = new SQLiteConnection(connectionString);
+                // Закрываем соединения
+                //sourceSocket.Shutdown(SocketShutdown.Both);
+                sourceSocket.Close();
 
-            connection.Open();
+                destinationSocket.Shutdown(SocketShutdown.Both);
+                destinationSocket.Close();
 
-            string sql = "CREATE TABLE MyTable (Id INTEGER PRIMARY KEY, Name TEXT)";
-            SQLiteCommand command = new SQLiteCommand(sql, connection);
-            SQLiteTransaction transaction = connection.BeginTransaction();
-            command.ExecuteNonQuery();
-            transaction.Commit();
-
-            connection.Close();*/
-
-
-            // Закрываем соединения
-            //sourceSocket.Shutdown(SocketShutdown.Both);
-            sourceSocket.Close();
-
-            //destinationSocket.Shutdown(SocketShutdown.Both);
-            destinationSocket.Close();
+            }
+            catch (SocketException e)
+            {
+                Console.WriteLine("{0} Error code: {1}.", e.Message, e.ErrorCode);
+            }
 
             Console.ReadLine();
         }
@@ -195,6 +193,92 @@ namespace Server1
             if (modulus < 0) modulus += divisor;
             return modulus;
         }
+    }
+
+
+    public static class DatabaseWork
+    {
+        public static void FillDatabase(int secretPartId, string secretPart, string P)
+        {
+            string connectionString = "Data Source=C:\\Users\\User\\source\\repos\\SecretSharingStorage\\Server1\\Server1Database.sqlite;Version=3;";
+            
+            // Создаем подключение к базе данных
+            using (SQLiteConnection connection = new SQLiteConnection(connectionString))
+            {
+                connection.Open();
+
+                // Начинаем транзакцию
+                using (SQLiteTransaction transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        // Создаем таблицу Secrets, если ее нет
+                        using (SQLiteCommand command = new SQLiteCommand("CREATE TABLE IF NOT EXISTS SecretsTable (id INTEGER PRIMARY KEY, secret_part_id INTEGER, secret_part VARCHAR(32), modulus VARCHAR(32))", connection))
+                        {
+                            command.ExecuteNonQuery();
+                        }
+
+                        // Заполняем таблицу Secrets одной строкой значений
+                        using (SQLiteCommand command = new SQLiteCommand("INSERT INTO SecretsTable (secret_part_id, secret_part, modulus) VALUES (@secretPartId, @secretPart, @P)", connection))
+                        {
+                            // Добавляем параметры запроса
+                            command.Parameters.AddWithValue("@secretPartId", secretPartId);
+                            command.Parameters.AddWithValue("@secretPart", secretPart);
+                            command.Parameters.AddWithValue("@P", P);
+
+                            command.ExecuteNonQuery();
+                        }
+
+                        // Фиксируем транзакцию
+                        transaction.Commit();
+                        connection.Close();
+
+                    }
+
+                    catch (Exception ex)
+                    {
+                        // Если возникла ошибка, откатываем транзакцию
+                        transaction.Rollback();
+                        Console.WriteLine("Ошибка при создании таблицы SecretsTable: " + ex.Message);
+                    }
+                }
+            }
+        }
+
+        // Читаем данные из таблицы SecretsTable и выводим их на экран
+        public static void ReadDataFromSecretsTable()
+        {
+            string connectionString = "Data Source=C:\\Users\\User\\source\\repos\\SecretSharingStorage\\Server1\\Server1Database.sqlite;Version=3;";
+
+            // Создаем подключение к базе данных
+            using (SQLiteConnection connection = new SQLiteConnection(connectionString))
+            {
+                connection.Open();
+
+                // Выполняем запрос к таблице SecretsTable
+                using (SQLiteCommand command = new SQLiteCommand("SELECT * FROM SecretsTable", connection))
+                {
+                    // Получаем результаты запроса
+                    using (SQLiteDataReader reader = command.ExecuteReader())
+                    {
+                        // Читаем данные из каждой строки
+                        while (reader.Read())
+                        {
+                            int id = reader.GetInt32(0);
+                            int secret_part_id = reader.GetInt32(1);
+                            string secret_part = reader.GetString(2);
+                            string modulus = reader.GetString(3);
+
+                            // Выводим данные на экран
+                            Console.WriteLine("id: {0}, secret_part_id: {1}, secret_part: {2}, modulus: {3}", id, secret_part_id, secret_part, modulus);
+                        }
+                    }
+                }
+
+                connection.Close();
+            }
+        }
+
     }
 
 

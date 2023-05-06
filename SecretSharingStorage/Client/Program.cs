@@ -20,7 +20,13 @@ namespace Client
 
                 byte[] data = Encoding.UTF8.GetBytes(message);
 
-                clientSocket.Send(data);
+                clientSocket.Send(data, 0, data.Length, SocketFlags.None);
+
+                // Получаем буфер для чтения ответа от сервера
+                data = new byte[1024];
+                int bytesRead = clientSocket.Receive(data);
+                string rMessage = Encoding.ASCII.GetString(data, 0, bytesRead);
+                Console.WriteLine("Получен ответ от сервера: " + rMessage);
 
                 clientSocket.Shutdown(SocketShutdown.Both);
                 clientSocket.Close();
