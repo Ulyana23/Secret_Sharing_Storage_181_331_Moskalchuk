@@ -39,3 +39,4 @@ C:\Users\User\source\repos\SecretSharingStorage\Server1\obj\Debug\netcoreapp3.1\
 C:\Users\User\source\repos\SecretSharingStorage\Server1\obj\Debug\netcoreapp3.1\Server1.dll
 C:\Users\User\source\repos\SecretSharingStorage\Server1\obj\Debug\netcoreapp3.1\Server1.pdb
 C:\Users\User\source\repos\SecretSharingStorage\Server1\obj\Debug\netcoreapp3.1\Server1.genruntimeconfig.cache
+C:\Users\User\source\repos\SecretSharingStorage\Server1\bin\Debug\netcoreapp3.1\Newtonsoft.Json.dll

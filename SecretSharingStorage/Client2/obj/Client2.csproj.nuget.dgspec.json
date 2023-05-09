@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\User\\source\\repos\\SecretSharingStorage\\Server1\\Server1.csproj": {}
+    "C:\\Users\\User\\source\\repos\\SecretSharingStorage\\Client2\\Client2.csproj": {}
   },
   "projects": {
-    "C:\\Users\\User\\source\\repos\\SecretSharingStorage\\Server1\\Server1.csproj": {
+    "C:\\Users\\User\\source\\repos\\SecretSharingStorage\\Client2\\Client2.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\User\\source\\repos\\SecretSharingStorage\\Server1\\Server1.csproj",
-        "projectName": "Server1",
-        "projectPath": "C:\\Users\\User\\source\\repos\\SecretSharingStorage\\Server1\\Server1.csproj",
+        "projectUniqueName": "C:\\Users\\User\\source\\repos\\SecretSharingStorage\\Client2\\Client2.csproj",
+        "projectName": "Client2",
+        "projectPath": "C:\\Users\\User\\source\\repos\\SecretSharingStorage\\Client2\\Client2.csproj",
         "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\User\\source\\repos\\SecretSharingStorage\\Server1\\obj\\",
+        "outputPath": "C:\\Users\\User\\source\\repos\\SecretSharingStorage\\Client2\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
@@ -46,10 +46,6 @@
             "Newtonsoft.Json": {
               "target": "Package",
               "version": "[13.0.3, )"
-            },
-            "System.Data.SQLite": {
-              "target": "Package",
-              "version": "[1.0.117, )"
             }
           },
           "imports": [
