@@ -12,3 +12,5 @@ C:\Users\User\source\repos\SecretSharingStorage\Client\obj\Debug\netcoreapp3.1\C
 C:\Users\User\source\repos\SecretSharingStorage\Client\obj\Debug\netcoreapp3.1\Client.dll
 C:\Users\User\source\repos\SecretSharingStorage\Client\obj\Debug\netcoreapp3.1\Client.pdb
 C:\Users\User\source\repos\SecretSharingStorage\Client\obj\Debug\netcoreapp3.1\Client.genruntimeconfig.cache
+C:\Users\User\source\repos\SecretSharingStorage\Client\bin\Debug\netcoreapp3.1\Newtonsoft.Json.dll
+C:\Users\User\source\repos\SecretSharingStorage\Client\obj\Debug\netcoreapp3.1\Client.csproj.CopyComplete
