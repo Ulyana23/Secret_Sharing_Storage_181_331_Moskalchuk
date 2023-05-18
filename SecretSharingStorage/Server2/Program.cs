@@ -31,7 +31,6 @@ namespace Server2
                     byte[] buffer = new byte[1024];
                     int length = sourceSocket.Receive(buffer);
                     string jsonString = Encoding.UTF8.GetString(buffer, 0, length);
-                    Console.WriteLine("Получено сообщение: " + jsonString);
 
                     // получаем данные из json
                     JObject jsonObject = JObject.Parse(jsonString);
@@ -39,11 +38,11 @@ namespace Server2
                     string type = (string)jsonObject.GetValue("type");
                     int clientId = (int)jsonObject.GetValue("clientId");
                     int secretId = (int)jsonObject.GetValue("secretId");
-                    int secretPartId = (int)jsonObject.GetValue("secretPartId");
 
                     switch (type)
                     {
                         case "set":
+                            int secretPartId = (int)jsonObject.GetValue("secretPartId");
                             string secretPart = (string)jsonObject.GetValue("secretPart");
                             string modulus = (string)jsonObject.GetValue("modulus");
 
@@ -61,11 +60,12 @@ namespace Server2
                             break;
 
                         case "get":
-                            Tuple<string, string> result = DatabaseWork.GetSecretPartFromDatabase(clientId, secretId, secretPartId);
+                            Tuple<string, string, int> result = DatabaseWork.GetSecretPartFromDatabase(clientId, secretId);
                             JObject json = new JObject
                             {
                                 { "modulus", result.Item2 },
                                 { "secretPart", result.Item1 },
+                                { "secretPartId", result.Item3 },
                             };
 
                             byte[] dataGet = Encoding.UTF8.GetBytes(json.ToString());
@@ -179,13 +179,13 @@ namespace Server2
             }
         }
 
-        public static Tuple<string, string> GetSecretPartFromDatabase(int clientId, int id, int secretPartId)
+        public static Tuple<string, string, int> GetSecretPartFromDatabase(int clientId, int id)
         {
             // создаем строку подключения к базе данных SQLite
             string connectionString = "Data Source=C:\\Users\\User\\source\\repos\\SecretSharingStorage\\Server2\\Server2Database.sqlite;Version=3;";
 
             // создаем SQL-запрос для получения параметров secretPart и modulus из таблицы SecretParts
-            string query = "SELECT secret_part, modulus FROM SecretsTable WHERE id = @id AND secret_part_id = @secretPartId AND user_id = @clientId";
+            string query = "SELECT secret_part, modulus, secret_part_id FROM SecretsTable WHERE id = @id AND user_id = @clientId";
 
             // создаем объект SQLiteConnection для подключения к базе данных
             using (SQLiteConnection connection = new SQLiteConnection(connectionString))
@@ -195,7 +195,6 @@ namespace Server2
                 {
                     // добавляем параметры в SQL-запрос
                     command.Parameters.AddWithValue("@id", id);
-                    command.Parameters.AddWithValue("@secretPartId", secretPartId);
                     command.Parameters.AddWithValue("@clientId", clientId);
 
                     // открываем соединение с базой данных
@@ -210,18 +209,18 @@ namespace Server2
                             // читаем первую строку результата
                             reader.Read();
 
-                            // получаем значения параметров secretPart и modulus из строки результата
+                            // получаем значения параметров secretPart, modulus и secretPartId из строки результата
                             string secretPart = reader.GetString(0);
                             string modulus = reader.GetString(1);
+                            int secretPartId = reader.GetInt32(2);
 
                             // создаем объект Tuple для возвращения двух значений
-                            Tuple<string, string> result = new Tuple<string, string>(secretPart, modulus);
+                            Tuple<string, string, int> result = new Tuple<string, string, int>(secretPart, modulus, secretPartId);
                             return result;
                         }
                         else
                         {
                             // если результат не содержит строк, то возвращаем null
-                            Console.WriteLine("ERROR 1");
                             return null;
                         }
                     }
