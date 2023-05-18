@@ -16,21 +16,6 @@ namespace Server1
     {
         static void Main(string[] args)
         {
-            //Console.WriteLine(ShamirSecretSharing.Modulus(4385 * BigInteger.Pow(8, Eyler(501)-1), 501));
-            List<Tuple<int, BigInteger, BigInteger>> secretPartsCurrent = new List<Tuple<int, BigInteger, BigInteger>>();
-
-            secretPartsCurrent.Add(Tuple.Create(1, new BigInteger(353), new BigInteger(501)));
-            secretPartsCurrent.Add(Tuple.Create(2, new BigInteger(160), new BigInteger(501)));
-            //secretPartsCurrent.Add(Tuple.Create(3, new BigInteger(157), new BigInteger(501)));
-            //secretPartsCurrent.Add(Tuple.Create(4, new BigInteger(344), new BigInteger(501)));
-            secretPartsCurrent.Add(Tuple.Create(5, new BigInteger(220), new BigInteger(501)));
-
-            BigInteger n = ShamirSecretSharing.SecretRecovery(secretPartsCurrent, 501);
-
-            Console.WriteLine($"РЕЗУЛЬТАТ: {n}");
-
-            Console.WriteLine(WordToNumber("helloqk2"));
-
             try
             {
                 List<int> availableServersList = new List<int>();
@@ -116,24 +101,21 @@ namespace Server1
 
                             string message = (string)jsonObject.GetValue("message");
                             int clientId = (int)jsonObject.GetValue("clientId");
-                            string type = (string)jsonObject.GetValue("type");
+                            string type = (string)jsonObject.GetValue("type"); // получить или или записать секрет
 
                             switch (type)
                             {
                                 case "set":
-                                    Console.WriteLine("Получен секрет: " + message);
-
                                     // разделяем секрет
                                     List<BigInteger> secretParts = ShamirSecretSharing.SecretSharing(WordToNumber(message));
                                     BigInteger P = secretParts[0];
                                     secretParts.RemoveAt(0);
-                                    Console.WriteLine("Части секрета: " + string.Join(", ", secretParts));
 
-                                    // заполняем базу данных
-                                    int secretId = DatabaseWork.FillDatabase(1, secretParts[0].ToString(), P.ToString(), clientId);
-                                    Console.WriteLine(secretId);
-                                    DatabaseWork.ReadDataFromSecretsTable();
+                                    // заполняем базу данных сервера 1
+                                    int secretId = DatabaseWork.FillDatabase(1, secretParts[0].ToString(), P.ToString(), clientId); // получаем id секрета
+                                    // DatabaseWork.ReadDataFromSecretsTable();
 
+                                    // отправляем запросы на остальные сервера
                                     if (availableServersList.Contains(2)) ServersConnection.SecretPartsToServers(destinationSocket2, clientId, secretId, secretParts[1].ToString(), P.ToString(), type, 2);
                                     if (availableServersList.Contains(3)) ServersConnection.SecretPartsToServers(destinationSocket3, clientId, secretId, secretParts[2].ToString(), P.ToString(), type, 3);
                                     if (availableServersList.Contains(4)) ServersConnection.SecretPartsToServers(destinationSocket4, clientId, secretId, secretParts[3].ToString(), P.ToString(), type, 4);
@@ -155,9 +137,9 @@ namespace Server1
                                     break;
 
                                 case "get":
-                                    Console.WriteLine("Получен ID секрета: " + message);
+                                    Console.WriteLine("\r\nПолучен ID секрета: " + message + "\r\n");
 
-                                    if (availableServersList.Count < 2)
+                                    if (availableServersList.Count < 2) // если подключено меньше 3 серверов, то завершение программы
                                     {
                                         byte[] data = Encoding.UTF8.GetBytes("false");
                                         clientSocket.Send(data, 0, data.Length, SocketFlags.None);
@@ -166,7 +148,7 @@ namespace Server1
 
                                     List<Tuple<int, BigInteger, BigInteger>> secretPartsCurrent = new List<Tuple<int, BigInteger, BigInteger>>();
 
-                                    secretPartsCurrent.Add(DatabaseWork.GetSecretPartFromDatabase(clientId, int.Parse(message), 1));
+                                    secretPartsCurrent.Add(DatabaseWork.GetSecretPartFromDatabase(clientId, int.Parse(message)));
 
                                     if (availableServersList.Contains(2)) secretPartsCurrent.Add(ServersConnection.SecretPartsFromServers(destinationSocket2, clientId, int.Parse(message), type, 2));
                                     if (availableServersList.Contains(3)) secretPartsCurrent.Add(ServersConnection.SecretPartsFromServers(destinationSocket3, clientId, int.Parse(message), type, 3));
@@ -263,10 +245,8 @@ namespace Server1
 
             Array.Reverse(bytes2);
 
-            Console.WriteLine(BitConverter.ToString(bytes2));
-
             string decodedWord = Encoding.UTF8.GetString(bytes2);
-            Console.WriteLine($"Вот что получилось: {decodedWord}");
+            // Console.WriteLine($"ПОлученный секрет: {decodedWord}");
 
             return decodedWord;
         }
@@ -289,7 +269,7 @@ namespace Server1
             // Отправляем сообщение на сервер
             byte[] dataSecretPart = Encoding.UTF8.GetBytes(json.ToString());
             destinationSocket.Send(dataSecretPart);
-            Console.WriteLine($"Сообщение отправлено на сервер {secretPartId}.");
+            Console.WriteLine($"Часть секрета отправлена на сервер {secretPartId}.");
 
             // получаем сообщение от клиента
             byte[] buffer = new byte[1024];
@@ -299,20 +279,19 @@ namespace Server1
             if (flag) Console.WriteLine($"Часть секрета успешно получена сервером {secretPartId}.");
         }
 
-        public static Tuple<int, BigInteger, BigInteger> SecretPartsFromServers(Socket destinationSocket, int clientId, int secretId, string type, int secretPartId)
+        public static Tuple<int, BigInteger, BigInteger> SecretPartsFromServers(Socket destinationSocket, int clientId, int secretId, string type, int serverId)
         {
             JObject json = new JObject
             {
                 { "clientId", clientId },
                 { "secretId", secretId },
-                { "secretPartId", secretPartId },
                 { "type", type }
             };
 
             // Отправляем сообщение на сервер
             byte[] data = Encoding.UTF8.GetBytes(json.ToString());
             destinationSocket.Send(data);
-            Console.WriteLine($"Сообщение отправлено на сервер {secretPartId}.");
+            Console.WriteLine($"Сообщение отправлено на сервер {serverId}.");
 
             // получаем сообщение от клиента
             byte[] buffer = new byte[1024];
@@ -323,8 +302,9 @@ namespace Server1
 
             string secretPart = (string)jsonObject.GetValue("secretPart");
             string modulus = (string)jsonObject.GetValue("modulus");
+            int secretPartId = (int)jsonObject.GetValue("secretPartId");
 
-            Console.WriteLine($"Часть секрета от сервера {secretPartId}: {secretPart}");
+            Console.WriteLine($"Часть секрета от сервера {serverId}: {secretPart}");
 
             Tuple<int, BigInteger, BigInteger> result = new Tuple<int, BigInteger, BigInteger>(secretPartId, BigInteger.Parse(secretPart), BigInteger.Parse(modulus));
             
@@ -338,7 +318,7 @@ namespace Server1
         public static List<BigInteger> SecretSharing(BigInteger sMessageNum)
         {
             // BigInteger sMessageNum = 1029;
-            BigInteger P = RandomNumberGenerator.RandomPrime(sMessageNum, 100000); // модуль 10000000000000000000
+            BigInteger P = RandomNumberGenerator.RandomPrime(sMessageNum, 10000000000000000000); // модуль 10000000000000000000
 
             BigInteger a = RandomNumberGenerator.RandomBigInteger(1, P - 1);
             BigInteger b = RandomNumberGenerator.RandomBigInteger(1, P - 1);
@@ -360,22 +340,44 @@ namespace Server1
             BigInteger sMessageNum = 0;
             // Console.WriteLine("Размер списка: " + secretPartsCurrent.Count);
             // Console.WriteLine("Модуль: " + P);
-            BigInteger EylerNum = Eyler(secretPartsCurrent[0].Item3);
-
-            Console.WriteLine("Функция Эйлера: " + EylerNum);
+            BigInteger EylerNum = fi(secretPartsCurrent[0].Item3);
 
             for (int i = 0; i < secretPartsCurrent.Count; i++)
             {
-                Console.WriteLine(i);
                 // int S0 = Modulus((FindPart(1, p1, 5) + FindPart(2, p2, 5) + FindPart(3, p3, 5) + FindPart(4, p4, 5) + FindPart(5, p5, 5)), P);
                 sMessageNum += FindPart(secretPartsCurrent, secretPartsCurrent[i].Item1, secretPartsCurrent[i].Item2, EylerNum);
                 // Console.WriteLine($"Часть {secretPartsCurrent[i].Item1}: {secretPartsCurrent[i].Item2}");
             }
 
-            Console.WriteLine(sMessageNum);
             sMessageNum = Modulus(sMessageNum, P);
-            Console.WriteLine(sMessageNum);
             return sMessageNum;
+        }
+
+        public static BigInteger fi(BigInteger n)
+        {
+            Console.WriteLine("\r\nВычисляется функция Эйлера...");
+            BigInteger f = n;
+            if (n % 2 == 0)
+            {
+                while (n % 2 == 0) n /= 2;
+                f /= 2;
+            }
+            for (BigInteger i = 3; i * i <= n; i += 2)
+            {
+                if (n % i == 0)
+                {
+                    while (n % i == 0) n /= i;
+                    f /= i;
+                    f *= (i - 1);
+                }
+            }
+            if (n > 1)
+            {
+                f /= n;
+                f *= (n - 1);
+            }
+            Console.WriteLine("Функция Эйлера вычислена.");
+            return f;
         }
 
         public static BigInteger Eyler(BigInteger n)
@@ -562,13 +564,13 @@ namespace Server1
             }
         }
 
-        public static Tuple<int, BigInteger, BigInteger> GetSecretPartFromDatabase(int clientId, int id, int secretPartId)
+        public static Tuple<int, BigInteger, BigInteger> GetSecretPartFromDatabase(int clientId, int id)
         {
             // создаем строку подключения к базе данных SQLite
             string connectionString = "Data Source=C:\\Users\\User\\source\\repos\\SecretSharingStorage\\Server1\\Server1Database.sqlite;Version=3;";
 
             // создаем SQL-запрос для получения параметров secretPart и modulus из таблицы SecretParts
-            string query = "SELECT secret_part, modulus FROM SecretsTable WHERE id = @id AND secret_part_id = @secretPartId AND user_id = @clientId";
+            string query = "SELECT secret_part, modulus, secret_part_id FROM SecretsTable WHERE id = @id AND user_id = @clientId";
 
             // создаем объект SQLiteConnection для подключения к базе данных
             using (SQLiteConnection connection = new SQLiteConnection(connectionString))
@@ -578,7 +580,6 @@ namespace Server1
                 {
                     // добавляем параметры в SQL-запрос
                     command.Parameters.AddWithValue("@id", id);
-                    command.Parameters.AddWithValue("@secretPartId", secretPartId);
                     command.Parameters.AddWithValue("@clientId", clientId);
 
                     // открываем соединение с базой данных
@@ -596,8 +597,7 @@ namespace Server1
                             // получаем значения параметров secretPart и modulus из строки результата
                             string secretPart = reader.GetString(0);
                             string modulus = reader.GetString(1);
-
-                            Console.WriteLine("ДАННЫЕ ПОЛУЧЕНЫ: " + secretPart + " " + modulus);
+                            int secretPartId = reader.GetInt32(2);
 
                             // создаем объект Tuple для возвращения двух значений
                             Tuple<int, BigInteger, BigInteger> result = new Tuple<int, BigInteger, BigInteger>(secretPartId, BigInteger.Parse(secretPart), BigInteger.Parse(modulus));
