@@ -101,7 +101,7 @@ namespace Server1
 
                             string message = (string)jsonObject.GetValue("message");
                             int clientId = (int)jsonObject.GetValue("clientId");
-                            string type = (string)jsonObject.GetValue("type"); // получить или или записать секрет
+                            string type = (string)jsonObject.GetValue("type"); // получить или записать секрет
 
                             switch (type)
                             {
@@ -148,29 +148,42 @@ namespace Server1
 
                                     List<Tuple<int, BigInteger, BigInteger>> secretPartsCurrent = new List<Tuple<int, BigInteger, BigInteger>>();
 
-                                    secretPartsCurrent.Add(DatabaseWork.GetSecretPartFromDatabase(clientId, int.Parse(message)));
+                                    Tuple<int, BigInteger, BigInteger> result = DatabaseWork.GetSecretPartFromDatabase(clientId, int.Parse(message)); // получаем часть секрета с сервера 1
 
-                                    if (availableServersList.Contains(2)) secretPartsCurrent.Add(ServersConnection.SecretPartsFromServers(destinationSocket2, clientId, int.Parse(message), type, 2));
-                                    if (availableServersList.Contains(3)) secretPartsCurrent.Add(ServersConnection.SecretPartsFromServers(destinationSocket3, clientId, int.Parse(message), type, 3));
-                                    if (availableServersList.Contains(4)) secretPartsCurrent.Add(ServersConnection.SecretPartsFromServers(destinationSocket4, clientId, int.Parse(message), type, 4));
-                                    if (availableServersList.Contains(5)) secretPartsCurrent.Add(ServersConnection.SecretPartsFromServers(destinationSocket5, clientId, int.Parse(message), type, 5));
-
-                                    // Console.WriteLine(secretPartsCurrent);
-
-                                    if (secretPartsCurrent.All(x => x.Item3 == secretPartsCurrent[0].Item3)) // если все модули совпадают
+                                    if (result != null)
                                     {
-                                        BigInteger modulus = secretPartsCurrent[0].Item3;
-                                        BigInteger n = ShamirSecretSharing.SecretRecovery(secretPartsCurrent, modulus);
-                                        string decodedWord = NumberToWord(n);
+                                        secretPartsCurrent.Add(result);
+                                        if (availableServersList.Contains(2)) secretPartsCurrent.Add(ServersConnection.SecretPartsFromServers(destinationSocket2, clientId, int.Parse(message), type, 2));
+                                        if (availableServersList.Contains(3)) secretPartsCurrent.Add(ServersConnection.SecretPartsFromServers(destinationSocket3, clientId, int.Parse(message), type, 3));
+                                        if (availableServersList.Contains(4)) secretPartsCurrent.Add(ServersConnection.SecretPartsFromServers(destinationSocket4, clientId, int.Parse(message), type, 4));
+                                        if (availableServersList.Contains(5)) secretPartsCurrent.Add(ServersConnection.SecretPartsFromServers(destinationSocket5, clientId, int.Parse(message), type, 5));
 
-                                        byte[] data = Encoding.UTF8.GetBytes(decodedWord);
-                                        // отправляем секрет клиенту
-                                        clientSocket.Send(data, 0, data.Length, SocketFlags.None);
+                                        // Console.WriteLine(secretPartsCurrent);
+
+                                        if (secretPartsCurrent.All(x => x.Item3 == secretPartsCurrent[0].Item3)) // если все модули совпадают
+                                        {
+                                            BigInteger modulus = secretPartsCurrent[0].Item3;
+                                            BigInteger n = ShamirSecretSharing.SecretRecovery(secretPartsCurrent, modulus);
+                                            string decodedWord = NumberToWord(n);
+
+                                            byte[] data = Encoding.UTF8.GetBytes(decodedWord);
+                                            // отправляем секрет клиенту
+                                            clientSocket.Send(data, 0, data.Length, SocketFlags.None);
+                                        }
+
+                                        else
+                                        {
+                                            Console.WriteLine("Error");
+                                            return;
+                                        }
                                     }
 
                                     else
                                     {
-                                        Console.WriteLine("Error");
+                                        Console.WriteLine("Этот секрет принадлежит другому пользователю.");
+                                        byte[] data = Encoding.UTF8.GetBytes("userIdError");
+                                        // отправляем сообщение клиенту
+                                        clientSocket.Send(data, 0, data.Length, SocketFlags.None);
                                         return;
                                     }
 
@@ -233,7 +246,7 @@ namespace Server1
             // переводим в десятичную и приводим к типу BigInteger
             BigInteger decimalNumber = BigInteger.Parse(hexStr, System.Globalization.NumberStyles.HexNumber);
 
-            Console.WriteLine($"Десятичное число: {decimalNumber}");
+            //Console.WriteLine($"Десятичное число: {decimalNumber}");
 
             return decimalNumber;
         }
@@ -317,7 +330,6 @@ namespace Server1
     {
         public static List<BigInteger> SecretSharing(BigInteger sMessageNum)
         {
-            // BigInteger sMessageNum = 1029;
             BigInteger P = RandomNumberGenerator.RandomPrime(sMessageNum, 10000000000000000000); // модуль 10000000000000000000
 
             BigInteger a = RandomNumberGenerator.RandomBigInteger(1, P - 1);
@@ -338,15 +350,12 @@ namespace Server1
         public static BigInteger SecretRecovery(List<Tuple<int, BigInteger, BigInteger>> secretPartsCurrent, BigInteger P)
         {
             BigInteger sMessageNum = 0;
-            // Console.WriteLine("Размер списка: " + secretPartsCurrent.Count);
-            // Console.WriteLine("Модуль: " + P);
-            BigInteger EylerNum = fi(secretPartsCurrent[0].Item3);
+            BigInteger EylerNum = fi(secretPartsCurrent[0].Item3); // функция Эйлера
 
             for (int i = 0; i < secretPartsCurrent.Count; i++)
             {
-                // int S0 = Modulus((FindPart(1, p1, 5) + FindPart(2, p2, 5) + FindPart(3, p3, 5) + FindPart(4, p4, 5) + FindPart(5, p5, 5)), P);
-                sMessageNum += FindPart(secretPartsCurrent, secretPartsCurrent[i].Item1, secretPartsCurrent[i].Item2, EylerNum);
-                // Console.WriteLine($"Часть {secretPartsCurrent[i].Item1}: {secretPartsCurrent[i].Item2}");
+                sMessageNum += FindPart(secretPartsCurrent, secretPartsCurrent[i].Item1, 
+                    secretPartsCurrent[i].Item2, EylerNum);
             }
 
             sMessageNum = Modulus(sMessageNum, P);
@@ -355,7 +364,6 @@ namespace Server1
 
         public static BigInteger fi(BigInteger n)
         {
-            Console.WriteLine("\r\nВычисляется функция Эйлера...");
             BigInteger f = n;
             if (n % 2 == 0)
             {
@@ -376,26 +384,21 @@ namespace Server1
                 f /= n;
                 f *= (n - 1);
             }
-            Console.WriteLine("Функция Эйлера вычислена.");
             return f;
         }
 
         public static BigInteger Eyler(BigInteger n)
         {
-            Console.WriteLine($"Ищу функцию Эйлера от {n}...");
             BigInteger result = n;
             for (BigInteger i = 2; i * i <= n; ++i)
                 if (n % i == 0)
                 {
-                    Console.WriteLine("Перехожу к циклу...");
                     while (n % i == 0)
                         n /= i;
                     result -= result / i;
-                    Console.WriteLine("Цикл завершен!");
                 }
             if (n > 1)
                 result -= result / n;
-            Console.WriteLine($"Нашел!");
             return result;
         }
 
@@ -408,45 +411,30 @@ namespace Server1
         }
 
 
-        private static BigInteger FindPart(List<Tuple<int, BigInteger, BigInteger>> secretPartsCurrent, BigInteger index, BigInteger number, BigInteger EylerNum)
+        private static BigInteger FindPart(List<Tuple<int, BigInteger, BigInteger>> secretPartsCurrent, 
+            BigInteger index, BigInteger number, BigInteger EylerNum)
         {
-            // Console.WriteLine($"ЧАСТЬ СЕКРЕТА {number}");
             BigInteger numerator = 1;
-            // Console.WriteLine("ЧИСЛИТЕЛЬ:");
             for (BigInteger i = 1; i < 6; i++)
             {
                 if (i != index && secretPartsCurrent.Any(x => x.Item1 == i))
                 {
-                    // Console.WriteLine(i);
                     numerator *= i;
                 }
             }
-
-            // Console.WriteLine("ЗНАМЕНАТЕЛЬ:");
             BigInteger denominator = 1;
             for (BigInteger i = 1; i < 6; i++)
             {
                 if (i != index && secretPartsCurrent.Any(x => x.Item1 == i))
                 {
-                    // Console.WriteLine(i);
-                    // Console.WriteLine(index + "\r\n");
                     denominator *= (i - index);
                 }
             }
 
-            // Console.WriteLine($"Числитель: {number * numerator}");
-            // Console.WriteLine($"Знаменатель: {denominator}");
-
-            // Console.WriteLine("Вычисляю...");
             BigInteger result1 = BigInteger.ModPow(denominator, EylerNum - 1, secretPartsCurrent[0].Item3);
-            // BigInteger result1 = FastPower(denominator, EylerNum - 1, secretPartsCurrent[0].Item3);
+            BigInteger result = Modulus(Modulus(number * numerator, secretPartsCurrent[0].Item3) * result1, 
+                secretPartsCurrent[0].Item3);
 
-            // Console.WriteLine("Степень по модулю: " + result1);
-
-            BigInteger result = Modulus(Modulus(number * numerator, secretPartsCurrent[0].Item3) * result1, secretPartsCurrent[0].Item3);
-            // BigInteger result = number * numerator / denominator;
-
-            // Console.WriteLine("R " + result);
             return result;
         }
 
@@ -599,7 +587,7 @@ namespace Server1
                             string modulus = reader.GetString(1);
                             int secretPartId = reader.GetInt32(2);
 
-                            // создаем объект Tuple для возвращения двух значений
+                            // создаем объект Tuple для возвращения нескольких значений
                             Tuple<int, BigInteger, BigInteger> result = new Tuple<int, BigInteger, BigInteger>(secretPartId, BigInteger.Parse(secretPart), BigInteger.Parse(modulus));
                             return result;
                         }
