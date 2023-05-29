@@ -10,7 +10,7 @@ namespace Client
     {
         static void Main(string[] args)
         {
-            int clientId = 2;
+            int clientId = 3;
             try
             {
                 Socket clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
