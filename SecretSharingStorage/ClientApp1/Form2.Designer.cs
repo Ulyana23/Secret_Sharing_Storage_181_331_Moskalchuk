@@ -103,7 +103,7 @@ namespace ClientApp1
             this.Controls.Add(this.textBox1);
             this.Controls.Add(this.label1);
             this.Name = "Form2";
-            this.Text = "Form2";
+            this.Text = "Форма отправки секрета (Клиент 1)";
             this.ResumeLayout(false);
             this.PerformLayout();
 

@@ -51,7 +51,7 @@ namespace ClientApp1
             this.ClientSize = new System.Drawing.Size(509, 108);
             this.Controls.Add(this.errorMessage);
             this.Name = "ErrorForm";
-            this.Text = "ErrorForm";
+            this.Text = "Ошибка (Клиент 1)";
             this.ResumeLayout(false);
 
         }

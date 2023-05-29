@@ -50,7 +50,7 @@ namespace ClientApp1
             this.ClientSize = new System.Drawing.Size(513, 204);
             this.Controls.Add(this.messageText);
             this.Name = "MessageForm";
-            this.Text = "MessageForm";
+            this.Text = "Сообщение (Клиент 1)";
             this.ResumeLayout(false);
 
         }

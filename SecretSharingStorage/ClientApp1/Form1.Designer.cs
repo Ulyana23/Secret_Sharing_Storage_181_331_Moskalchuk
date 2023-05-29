@@ -67,8 +67,7 @@ namespace ClientApp1
             this.Controls.Add(this.buttonSet);
             this.Controls.Add(this.buttonGet);
             this.Name = "Form1";
-            this.Text = "Form1";
-            this.Load += new System.EventHandler(this.Form1_Load);
+            this.Text = "Главное меню (Клиент 1)";
             this.ResumeLayout(false);
 
         }

@@ -66,7 +66,14 @@ namespace ClientApp1
                 errorForm.ShowDialog();
                 return;
             }
-            
+
+            if (secret == "userIdError")
+            {
+                var errorForm = new ErrorForm("Этот секрет принадлежит другому пользователю.");
+                errorForm.ShowDialog();
+                return;
+            }
+
             else
             {
                 var messageForm = new MessageForm("Ваш секрет: " + secret);

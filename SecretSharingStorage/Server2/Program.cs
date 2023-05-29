@@ -49,7 +49,7 @@ namespace Server2
                             // заполняем базу данных
                             DatabaseWork.FillDatabase(secretPartId, secretPart, modulus, clientId, secretId);
                             Console.WriteLine(secretId);
-                            DatabaseWork.ReadDataFromSecretsTable();
+                            // DatabaseWork.ReadDataFromSecretsTable();
 
                             flag = true;
                             byte[] dataSet = Encoding.UTF8.GetBytes(flag.ToString());

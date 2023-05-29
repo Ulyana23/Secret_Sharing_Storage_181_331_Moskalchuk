@@ -76,7 +76,7 @@ namespace ClientApp1
             this.Controls.Add(this.secretIdtextBox);
             this.Controls.Add(this.label2);
             this.Name = "Form3";
-            this.Text = "Form3";
+            this.Text = "Форма получения секрета (Клиент 1)";
             this.ResumeLayout(false);
             this.PerformLayout();
 
