@@ -1,0 +1,17 @@
+C:\Users\User\source\repos\SecretSharingStorage\ClientApp2\bin\Debug\ClientApp2.exe.config
+C:\Users\User\source\repos\SecretSharingStorage\ClientApp2\bin\Debug\ClientApp2.exe
+C:\Users\User\source\repos\SecretSharingStorage\ClientApp2\bin\Debug\ClientApp2.pdb
+C:\Users\User\source\repos\SecretSharingStorage\ClientApp2\bin\Debug\Newtonsoft.Json.dll
+C:\Users\User\source\repos\SecretSharingStorage\ClientApp2\bin\Debug\Newtonsoft.Json.xml
+C:\Users\User\source\repos\SecretSharingStorage\ClientApp2\obj\Debug\ClientApp2.csproj.AssemblyReference.cache
+C:\Users\User\source\repos\SecretSharingStorage\ClientApp2\obj\Debug\ClientApp2.ErrorForm.resources
+C:\Users\User\source\repos\SecretSharingStorage\ClientApp2\obj\Debug\ClientApp2.Form1.resources
+C:\Users\User\source\repos\SecretSharingStorage\ClientApp2\obj\Debug\ClientApp2.Form2.resources
+C:\Users\User\source\repos\SecretSharingStorage\ClientApp2\obj\Debug\ClientApp2.Form3.resources
+C:\Users\User\source\repos\SecretSharingStorage\ClientApp2\obj\Debug\ClientApp2.MessageForm.resources
+C:\Users\User\source\repos\SecretSharingStorage\ClientApp2\obj\Debug\ClientApp2.Properties.Resources.resources
+C:\Users\User\source\repos\SecretSharingStorage\ClientApp2\obj\Debug\ClientApp2.csproj.GenerateResource.cache
+C:\Users\User\source\repos\SecretSharingStorage\ClientApp2\obj\Debug\ClientApp2.csproj.CoreCompileInputs.cache
+C:\Users\User\source\repos\SecretSharingStorage\ClientApp2\obj\Debug\ClientApp2.csproj.CopyComplete
+C:\Users\User\source\repos\SecretSharingStorage\ClientApp2\obj\Debug\ClientApp2.exe
+C:\Users\User\source\repos\SecretSharingStorage\ClientApp2\obj\Debug\ClientApp2.pdb
